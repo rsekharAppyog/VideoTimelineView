@@ -9,7 +9,7 @@
 import UIKit
 import AVFoundation
 
-protocol TimelinePlayStatusReceiver {
+protocol TimelinePlayStatusReceiver : class {
     func videoTimelineStopped()
     func videoTimelineMoved()
     func videoTimelineTrimChanged()
@@ -26,13 +26,12 @@ class VideoTimelineView: UIView {
     public private(set) var asset:AVAsset? = nil
     var player:AVPlayer? = nil
     
-    var playStatusReceiver:TimelinePlayStatusReceiver? = nil
+    weak var playStatusReceiver:TimelinePlayStatusReceiver? = nil
     
     var repeatOn:Bool = false
     
     public private(set) var trimEnabled:Bool = false
-    
-    
+    public private(set) var preferredTimescale : Int32 = 100
     
     var currentTime:Float64 = 0
     public private(set) var duration:Float64 = 0
@@ -56,9 +55,18 @@ class VideoTimelineView: UIView {
        fatalError("MainView init(coder:) has not been implemented")
     }
     
+    deinit {
+        print("VideoTimelineView deinit")
+    }
+    
     
     func viewDidLayoutSubviews() {
         coordinate()
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        viewDidLayoutSubviews()
     }
     
     func coordinate() {
@@ -69,11 +77,10 @@ class VideoTimelineView: UIView {
         if let new = newAsset {
             asset = new
             duration = CMTimeGetSeconds(new.duration)
-            player = AVPlayer(playerItem: AVPlayerItem(asset: asset!))
             audioPlayer = AVPlayer(playerItem: AVPlayerItem(asset: asset!))
-            audioPlayer.volume = 1.0
+            audioPlayer.isMuted = true
             audioPlayer2 = AVPlayer(playerItem: AVPlayerItem(asset: asset!))
-            audioPlayer2.volume = 1.0
+            audioPlayer2.isMuted = true
             timelineView.newMovieSet()
         }
     }
@@ -110,22 +117,20 @@ class VideoTimelineView: UIView {
     }
     
     func moveTo(_ time:Float64, animate:Bool) {
-        if animate {
-            
-        } else {
-            accurateSeek(time, scrub:false)
-            timelineView.setCurrentTime(time, force:true)
-        }
+        accurateSeek(time, scrub:false)
+        timelineView.setCurrentTime(time, force:true)
     }
     
     //MARK: - seeking
     var previousSeektime:Float64 = 0
     func timelineIsMoved(_ currentTime:Float64, scrub:Bool) {
         let move = abs(currentTime - previousSeektime)
-        let seekTolerance = CMTimeMakeWithSeconds(move, preferredTimescale:100)
+        let seekTolerance = CMTimeMakeWithSeconds(move, preferredTimescale:preferredTimescale)
         
         if player != nil {
-            player!.seek(to:CMTimeMakeWithSeconds(currentTime , preferredTimescale:100), toleranceBefore:seekTolerance,toleranceAfter:seekTolerance)
+            let seconds = CMTimeMakeWithSeconds(currentTime , preferredTimescale:preferredTimescale)
+            print("seek to \(seconds)")
+            player!.seek(to:seconds, toleranceBefore:seekTolerance,toleranceAfter:seekTolerance)
         }
         previousSeektime = currentTime
         if scrub {
@@ -197,29 +202,35 @@ class VideoTimelineView: UIView {
         let currentTime = timelineView.centerLine.currentTime
         let reached = timeReachesEnd(currentTime)
         
-        if reached.trimEnd {
+        if reached.trimEnd || reached.movieEnd {
             accurateSeek(timelineView.currentTrim().start, scrub:false)
             timelineView.manualScrolledAfterEnd = false
-        } else if reached.movieEnd {
-            accurateSeek(0, scrub:false)
-            timelineView.manualScrolledAfterEnd = false
         }
+        
         if player != nil {
             player!.play()
         }
-        playerTimer = Timer.scheduledTimer(timeInterval: 0.01, target: self, selector: #selector(self.playerTimerAction(_:)), userInfo: nil, repeats: true)
+        playerTimer.invalidate()
+        playerTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true, block: { [weak self] (timer) in
+            guard let `self` = self else {
+                timer.invalidate()
+                return
+            }
+            
+            self.playerTimerAction(timer)
+        })
         RunLoop.main.add(playerTimer, forMode:RunLoop.Mode.common)
         playing = true
     }
     
     func stop() {
         playing = false
+        playerTimer.invalidate()
+        
         if asset == nil || player == nil {
             return
         }
         player!.pause()
-        playerTimer.invalidate()
-        
         if let receiver = playStatusReceiver {
             receiver.videoTimelineStopped()
         }
@@ -240,14 +251,12 @@ class VideoTimelineView: UIView {
             }
         } else if reached.reached {
             if repeatOn && reached.trimEnd {
-                
                 if player!.timeControlStatus == .playing {
                     player!.pause()
                 }
                 currentPlayerTime = trim.start
                 accurateSeek(currentPlayerTime, scrub:false)
                 reachFlg = true
-                
             } else {
                 stop()
             }

@@ -11,9 +11,9 @@ import UIKit
 class TimelineMeasure: UIView {
 
     var unitSize:CGFloat = 100
-    var frameImagesView:FrameImagesView? = nil
-    var parentScroller:TimelineScroller? = nil
-    var parentView:TimelineView? = nil
+    weak var frameImagesView:FrameImagesView? = nil
+    weak var parentScroller:TimelineScroller? = nil
+    weak var parentView:TimelineView? = nil
     var stringColor:UIColor = UIColor(hue: 0.0, saturation:0.0, brightness:0.35, alpha: 1)
     var animating = false
     

@@ -10,8 +10,6 @@ import Foundation
 import UIKit
 import AVFoundation
 
-
-
 class FrameImage: UIImageView {
     var tolerance:Float64? = nil
 }
@@ -19,21 +17,14 @@ class FrameImage: UIImageView {
 
 // MARK: - FrameImagesView
 class FrameImagesView: UIScrollView {
-    
-    
-    var mainView:VideoTimelineView!
-    
+    weak var mainView:VideoTimelineView!
     var frameImagesArray:[FrameImage] = []
-    
-    
     var thumbnailFrameSize:CGSize = CGSize(width: 640,height: 480)
     let preferredTimescale:Int32 = 100
     var timeTolerance = CMTimeMakeWithSeconds(10 , preferredTimescale:100)
-
     var maxWidth:CGFloat = 0
     var minWidth:CGFloat = 0
-    
-    var parentScroller:TimelineScroller? = nil
+    weak var parentScroller:TimelineScroller? = nil
     
     override init (frame: CGRect) {
         super.init(frame: frame)
@@ -45,8 +36,6 @@ class FrameImagesView: UIScrollView {
     required init(coder aDecoder: NSCoder) {
         fatalError("FrameImagesView init(coder:) has not been implemented")
     }
-    
-    
     
     
     func reset() {
@@ -66,13 +55,11 @@ class FrameImagesView: UIScrollView {
         displayFrames()
         animationTimer = Timer.scheduledTimer(timeInterval: 0.01, target: self, selector: #selector(self.animate(_:)), userInfo: nil, repeats: true)
         RunLoop.main.add(animationTimer, forMode:RunLoop.Mode.common)
-        
     }
     
     func stopAnimation() {
         animationTimer.invalidate()
         animating = false
-        
         
         if let parent = parentScroller {
             frame.origin = CGPoint(x: parent.frame.size.width / 2, y: parent.measureHeight)
@@ -81,7 +68,8 @@ class FrameImagesView: UIScrollView {
         displayFrames()
     }
     
-    @objc func animate(_ timer:Timer) {
+    @objc
+    func animate(_ timer:Timer) {
         if animating == false {
             return
         }
@@ -89,8 +77,6 @@ class FrameImagesView: UIScrollView {
     }
     
     //MARK: - layout
-
-
     var uponFrames = Set<Int>()
     var belowFrames = Set<Int>()
     var deepFrames = Set<Int>()
@@ -116,12 +102,12 @@ class FrameImagesView: UIScrollView {
             let visibleHalf = parent.frame.size.width / 2
             
             if animating {
-                    if let layer = parent.layer.presentation() {
-                        offset.x = visibleHalf - layer.bounds.origin.x
-                        offset.y = parent.frame.origin.y + parent.measureHeight
-                        frame.origin = offset
-                        mainView!.timelineView.viewForAnimate.addSubview(self)
-                    }
+                if let layer = parent.layer.presentation() {
+                    offset.x = visibleHalf - layer.bounds.origin.x
+                    offset.y = parent.frame.origin.y + parent.measureHeight
+                    frame.origin = offset
+                    mainView!.timelineView.viewForAnimate.addSubview(self)
+                }
             }
         }
         
@@ -237,12 +223,9 @@ class FrameImagesView: UIScrollView {
         }
     }
     
-    
-    
     func thumbnailCountFloat() -> CGFloat {
         return maxWidth / thumbnailFrameSize.width
     }
-
     
     func indexWithTime(_ time:Float64) -> Int? {
         if let assetDuration = assetDuration() {
@@ -263,9 +246,6 @@ class FrameImagesView: UIScrollView {
         return 0
     }
     
-    
-    
-    
     //MARK: - frame images
     func cancelImageGenerator() {
         if let asset = mainView!.asset {
@@ -275,7 +255,7 @@ class FrameImagesView: UIScrollView {
     }
     
     func discardAllFrameImages() {
-    
+        
         for index in 0 ..< frameImagesArray.count {
             let view = frameImagesArray[index]
             UIView.animate(withDuration: 0.5,delay:Double(0.0),options:UIView.AnimationOptions.curveEaseOut, animations: { () -> Void in
@@ -295,7 +275,7 @@ class FrameImagesView: UIScrollView {
     
     
     func requestAll(){
-
+        
         var timesArray = [NSValue]()
         for index in 0 ..< frameImagesArray.count {
             timesArray += [NSValue(time:CMTimeMakeWithSeconds(timeWithIndex(index) , preferredTimescale:preferredTimescale))]
@@ -386,17 +366,17 @@ class FrameImagesView: UIScrollView {
         }
         return (visibleLeft, visibleRight)
     }
-   
+    
     func updateTolerance() {
         if mainView!.asset == nil {
             return
         }
         let thumbDuration = Float64(thumbnailFrameSize.width / self.frame.size.width) * mainView!.duration * 2
-                timeTolerance = CMTimeMakeWithSeconds(thumbDuration , preferredTimescale:100)
+        timeTolerance = CMTimeMakeWithSeconds(thumbDuration , preferredTimescale:100)
         
         
     }
-
+    
     func requestImageGeneration(timesArray:[NSValue]) {
         
         if let asset = mainView!.asset {
@@ -426,11 +406,11 @@ class FrameImagesView: UIScrollView {
     
     
     func setFrameImage(image:UIImage, time:Float64) {
-         
+        
         if let index = indexWithTime(time) {
             if frameImagesArray.count > index && index >= 0 {
                 let imageView = frameImagesArray[index]
-
+                
                 imageView.image = image
                 imageView.tolerance = CMTimeGetSeconds(timeTolerance)
                 UIView.animate(withDuration: 0.2,delay:Double(0),options:UIView.AnimationOptions.curveEaseOut, animations: { () -> Void in

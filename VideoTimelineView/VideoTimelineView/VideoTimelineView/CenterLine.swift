@@ -11,10 +11,10 @@ import AVFoundation
 
 class CenterLine: UIView {
 
-    var mainView:VideoTimelineView!
+    weak var mainView:VideoTimelineView!
     
     let timeLabel = UILabel()
-    var parentView:TimelineView? = nil
+    weak var parentView:TimelineView? = nil
     var duration:Float64 = 0
     var currentTime:Float64 = 0
     let margin:CGFloat = 6
@@ -117,6 +117,9 @@ class CenterLine: UIView {
     }
     
     func setTimeText() {
+        guard !currentTime.isNaN else {
+            return
+        }
         let minute = Int(currentTime / 60)
         let second = (currentTime - Float64(minute) * 60)
         let milliSec = Int((second - Float64(Int(second))) * 100)

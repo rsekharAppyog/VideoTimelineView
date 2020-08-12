@@ -11,7 +11,7 @@ import UIKit
 import AVFoundation
 
 class TimelineView: UIView, UIScrollViewDelegate {
-    var mainView:VideoTimelineView? = nil
+    weak var mainView:VideoTimelineView? = nil
     let scroller = TimelineScroller()
     let centerLine = CenterLine()
     let viewForAnimate = UIScrollView()

@@ -9,10 +9,9 @@
 import UIKit
 
 class TrimView: UIView {
-    var mainView:VideoTimelineView!
-    
-    var timelineView:TimelineView!
-    var parentScroller:TimelineScroller!
+    weak var mainView:VideoTimelineView!
+    weak var timelineView:TimelineView!
+    weak var parentScroller:TimelineScroller!
     var startKnob = TrimKnob()
     var endKnob = TrimKnob()
     var movieDuration:Float64 = 0
@@ -23,7 +22,6 @@ class TrimView: UIView {
         super.init(frame: frame)
         self.isUserInteractionEnabled = false
         self.backgroundColor = .clear
-        
     }
     
     required init(coder aDecoder: NSCoder) {
@@ -41,7 +39,6 @@ class TrimView: UIView {
         timelineView.addSubview(endKnob)
     }
     
-    
     func reset(duration:Float64) {
         movieDuration = duration
         startKnob.knobTimePoint = 0
@@ -51,8 +48,6 @@ class TrimView: UIView {
         }
         layout()
     }
-    
-     
     
     let knobWidth:CGFloat = 20
     let knobWidthExtend:CGFloat = 5
@@ -410,12 +405,11 @@ class TrimView: UIView {
     //MARK: - edgeScroll
     var edgeScrollTimer = Timer()
     var edgeScrolled = false
-    var edgeScrollingKnob:TrimKnob? = nil
+    weak var edgeScrollingKnob:TrimKnob? = nil
     var edgeScrollStrength:CGFloat = 0
     var edgeScrollingKnobPosition:CGFloat = 0
     var edgeScrollLastChangedTime:Date = Date()
     var edgeScrollLastChangedPosition:CGFloat = 0
-    
     
     func updateEdgeScroll(_ knob:TrimKnob, strength:CGFloat, position:CGFloat) {
         var changed = false
@@ -498,9 +492,9 @@ class TrimView: UIView {
 
 //MARK: - TrimKnob
 class TrimKnob:UIView {
-    var timelineView:TimelineView!
+    weak var timelineView:TimelineView!
     var knobPositionOnScreen:CGFloat = 0
-    var trimView:TrimView!
+    weak var trimView:TrimView!
     var knobTimePoint:Float64 = 0
     var isOutOfScreen:Bool = false
     
@@ -656,15 +650,12 @@ class TrimKnob:UIView {
         let knobWidth = trimView.knobWidth
         var swapping:CGFloat = 0
         
-        
-        if  anotherTimePoint < timePoint && startKnobPoint < anotherTimePoint
-        {
+        if  anotherTimePoint < timePoint && startKnobPoint < anotherTimePoint {
             swapping = trimView.timeToCG(anotherTimePoint - timePoint)
             if -swapping > knobWidth {
                 swapping = -knobWidth
             }
-        } else if  anotherTimePoint > timePoint && startKnobPoint > anotherTimePoint
-        {
+        } else if  anotherTimePoint > timePoint && startKnobPoint > anotherTimePoint {
             swapping = trimView.timeToCG(anotherTimePoint - timePoint)
             if swapping > knobWidth {
                 swapping = knobWidth

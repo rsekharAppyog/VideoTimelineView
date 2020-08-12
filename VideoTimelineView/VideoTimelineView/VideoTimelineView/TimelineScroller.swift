@@ -10,7 +10,7 @@ import UIKit
 
 class TimelineScroller: UIScrollView {
    
-    var parentView:TimelineView? = nil
+    weak var parentView:TimelineView? = nil
     let frameImagesView = FrameImagesView()
     let measure = TimelineMeasure()
     let trimView = TrimView()
@@ -111,8 +111,11 @@ class TimelineScroller: UIScrollView {
     
     //MARK: - scroll
     func setScrollPoint(_ scrollPoint:CGFloat) {
-        let offset = (scrollPoint * frameImagesView.frame.size.width) + (self.frame.size.width / 2)
+        guard !scrollPoint.isNaN else {
+            return
+        }
         
+        let offset = (scrollPoint * frameImagesView.frame.size.width) + (self.frame.size.width / 2)
         self.contentOffset.x = offset - (self.frame.size.width / 2)
     }
     
